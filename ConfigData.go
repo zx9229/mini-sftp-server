@@ -21,10 +21,12 @@ type ConfigData struct {
 	Address       string            //例如  0.0.0.0:2222
 	IsReadOnly    bool              //ReadOnly configures a Server to serve files in read-only mode.
 	IsDebugMode   bool              //显示调试信息
-	UserPwds      map[string]string //用户名密码
-	UseOneTimeKey bool              //使用一次性的私钥(临时密钥,在进程中临时生成,进程退出之后就丢了)
+	UserPwd       map[string]string //用户名和密码
+	UserPwdMD5    map[string]string //用户名和密码的MD5值
+	UseOneTimeKey bool              //使用一次性的私钥(临时密钥,在进程中临时生成,进程退出之后就丢失了)
 	HostKeyFile   string            //使用指定的私钥的文件
 	HostKey       string            //指定私钥的内容
+	HomeDir       string            //默认目录(不填则为进程的工作目录)
 }
 
 func calcConfigData(s string, isBase64 bool) (cfg *ConfigData, err error) {
@@ -51,7 +53,15 @@ func (thls *ConfigData) init() error {
 
 	for range "1" {
 
-		if thls.UserPwds == nil || len(thls.UserPwds) == 0 {
+		if thls.UserPwd == nil {
+			thls.UserPwd = make(map[string]string)
+		}
+
+		if thls.UserPwdMD5 == nil {
+			thls.UserPwdMD5 = make(map[string]string)
+		}
+
+		if len(thls.UserPwd) == 0 && len(thls.UserPwdMD5) == 0 {
 			err = errors.New("no username")
 			break
 		}
@@ -78,6 +88,7 @@ func (thls *ConfigData) init() error {
 			break
 		}
 	}
+
 	return err
 }
 
@@ -90,13 +101,15 @@ func (thls *ConfigData) sshServerConfig() *ssh.ServerConfig {
 }
 
 func exampleConfigData() string {
-	exampleCfg := new(ConfigData)
-	exampleCfg.UserPwds = make(map[string]string)
-	exampleCfg.Address = "localhost:2222"
-	exampleCfg.UserPwds["root"] = "toor"
-	exampleCfg.UserPwds["ping"] = "pong"
-	exampleCfg.UserPwds["Scott"] = "Tiger"
-	data, err := json.Marshal(exampleCfg)
+	cfgData := new(ConfigData)
+	cfgData.UserPwd = make(map[string]string)
+	cfgData.UserPwdMD5 = make(map[string]string)
+	cfgData.Address = "localhost:2222"
+	cfgData.UserPwd["root"] = "toor"
+	cfgData.UserPwd["ping"] = "pong"
+	cfgData.UserPwd["Scott"] = "Tiger"
+	cfgData.UserPwdMD5["u"] = "83878c91171338902e0fe0fb97a8c47a" //[p]的md5值的小写.
+	data, err := json.Marshal(cfgData)
 	if err != nil {
 		panic("UNKNOWN_ERROR")
 	}

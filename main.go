@@ -4,6 +4,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -12,6 +14,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -31,12 +35,14 @@ func main() {
 		isStdin    bool
 		base64Data string
 		confName   string
+		isOffset   bool
 	)
 
 	flag.BoolVar(&isHelp, "help", false, "show this help")
 	flag.BoolVar(&isStdin, "stdin", false, "read base64 encoding data from stdin")
 	flag.StringVar(&base64Data, "base64", "", "base64 encoding of the config file")
 	flag.StringVar(&confName, "conf", "", "config filename")
+	flag.BoolVar(&isOffset, "offset", false, "find the conf based on the dir where the exe is located.")
 	flag.Parse()
 
 	if isHelp {
@@ -46,7 +52,7 @@ func main() {
 		return
 	}
 
-	content, isBase64, err := loadConfigContent(isStdin, base64Data, confName)
+	content, isBase64, err := loadConfigContent(isStdin, base64Data, confName, isOffset)
 	if err != nil {
 		log.Fatalln("loadConfigContent,", err)
 	}
@@ -88,6 +94,8 @@ func main() {
 			log.Println("failed to accept incoming connection", err)
 			continue
 		}
+
+		log.Println(fmt.Sprintf("Accept, LocalAddr=%v, RemoteAddr=%v", nConn.LocalAddr(), nConn.RemoteAddr()))
 
 		// Before use, a handshake must be performed on the incoming
 		// net.Conn.
@@ -154,6 +162,10 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 			fmt.Fprintf(globalDebugStream, "Read write server\n")
 		}
 
+		if 0 < len(globalConfigData.HomeDir) {
+			serverOptions = append(serverOptions, func(s *sftp.Server) error { return os.Chdir(globalConfigData.HomeDir) })
+		}
+
 		server, err := sftp.NewServer(
 			channel,
 			serverOptions...,
@@ -174,18 +186,20 @@ func tmpPasswordCallback(remoteConn ssh.ConnMetadata, password []byte) (p *ssh.P
 	fmt.Fprintf(globalDebugStream, "Trying to auth user "+remoteConn.User()+"\n")
 
 	for range "1" {
-		if globalConfigData.UserPwds == nil {
+		rawPwd, rawIsOk := globalConfigData.UserPwd[remoteConn.User()]
+		md5Pwd, md5IsOk := globalConfigData.UserPwdMD5[remoteConn.User()]
+		if !rawIsOk && !md5IsOk {
 			err = errors.New("User does not exist")
 			log.Println(err)
 			break
 		}
-		curPwd, isOk := globalConfigData.UserPwds[remoteConn.User()]
-		if !isOk {
-			err = errors.New("User does not exist")
-			log.Println(err)
-			break
+		rawIsOk = rawIsOk && rawPwd == string(password)
+		if md5IsOk {
+			hs := md5.New()
+			hs.Write(password)
+			md5IsOk = md5Pwd == hex.EncodeToString(hs.Sum(nil))
 		}
-		if curPwd != string(password) {
+		if !rawIsOk && !md5IsOk {
 			err = errors.New("Incorrect password")
 			log.Println(err)
 			break
@@ -195,7 +209,7 @@ func tmpPasswordCallback(remoteConn ssh.ConnMetadata, password []byte) (p *ssh.P
 	return
 }
 
-func loadConfigContent(isStdin bool, base64Data string, filename string) (content string, isBase64 bool, err error) {
+func loadConfigContent(isStdin bool, base64Data string, filename string, isOffset bool) (content string, isBase64 bool, err error) {
 	content = ""
 	isBase64 = false
 
@@ -217,6 +231,9 @@ func loadConfigContent(isStdin bool, base64Data string, filename string) (conten
 	}
 
 	if 0 < len(filename) {
+		if isOffset && !path.IsAbs(filename) {
+			filename = path.Join(os.Args[0][:strings.LastIndexAny(os.Args[0], `/\`)+1], filename)
+		}
 		var bytes []byte
 		if bytes, err = ioutil.ReadFile(filename); err == nil {
 			content = string(bytes)
