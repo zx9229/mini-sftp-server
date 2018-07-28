@@ -40,6 +40,16 @@
 * `Linux`下可以利用`OpenSSH`建立`SFTP`服务器。  
 略。  
 
+* `Windows`下设置开机自启动程序(不依赖账户登录)  
+下面的命令的含义：创建一个任务计划，它以系统账户(`SYSTEM`)运行，它在开机时(`ONSTART`)运行。  
+`SCHTASKS /Create /TN 任务名 /RU SYSTEM /SC ONSTART /TR 程序的路径和文件名`。  
+示例：创建一个任务计划，名为`mini_sftp_server`，运行命令是`C:\exeFolder\mini-sftp-server.exe -conf cfg.json -offset`。  
+`SCHTASKS /Create /TN mini_sftp_server /RU SYSTEM /SC ONSTART /TR "C:\exeFolder\mini-sftp-server.exe -conf cfg.json -offset"`。  
+注意，测试的时候，请关闭防火墙！
+
+* `Linux`下设置开机自启动程序  
+略。
+
 
 # 备注说明  
 
