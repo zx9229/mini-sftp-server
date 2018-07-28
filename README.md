@@ -41,11 +41,12 @@
 略。  
 
 * `Windows`下设置开机自启动程序(不依赖账户登录)  
-下面的命令的含义：创建一个任务计划，它以系统账户(`SYSTEM`)运行，它在开机时(`ONSTART`)运行。  
-`SCHTASKS /Create /TN 任务名 /RU SYSTEM /SC ONSTART /TR 程序的路径和文件名`。  
-示例：创建一个任务计划，名为`mini_sftp_server`，运行命令是`C:\exeFolder\mini-sftp-server.exe -conf cfg.json -offset`。  
-`SCHTASKS /Create /TN mini_sftp_server /RU SYSTEM /SC ONSTART /TR "C:\exeFolder\mini-sftp-server.exe -conf cfg.json -offset"`。  
-注意，测试的时候，请关闭防火墙！
+思路：创建一个任务计划，它以系统账户(`SYSTEM`)运行，它在开机时(`ONSTART`)运行。无需账户登录。  
+命令：`SCHTASKS /Create /TN 任务名 /RU SYSTEM /SC ONSTART /TR 程序的路径和文件名`。  
+示例：`SCHTASKS /Create /TN MSFTPS /RU SYSTEM /SC ONSTART /TR "C:\exeFolder\msftps.exe -conf cfg.json"`。  
+解释：创建一个任务计划，名为`MSFTPS`，运行命令是`C:\exeFolder\msftps.exe -conf cfg.json`。  
+注意：如果需要更细致的设置，请在`任务计划程序`里面进行设置。  
+注意：测试的时候，请关闭防火墙！
 
 * `Linux`下设置开机自启动程序  
 略。
