@@ -14,8 +14,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"path"
-	"strings"
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -39,16 +37,18 @@ func main() {
 	)
 
 	flag.BoolVar(&isHelp, "help", false, "show this help")
-	flag.BoolVar(&isStdin, "stdin", false, "read base64 encoding data from stdin")
-	flag.StringVar(&base64Data, "base64", "", "base64 encoding of the config file")
-	flag.StringVar(&confName, "conf", "", "config filename")
+	flag.BoolVar(&isStdin, "stdin", false, "read base64 encoded data from standard input")
+	flag.StringVar(&base64Data, "base64", "", "base64 encoded data for the configuration file")
+	flag.StringVar(&confName, "conf", "", "configuration file name")
 	flag.BoolVar(&isOffset, "offset", false, "find the conf based on the dir where the exe is located.")
+	//如果配置文件里面有配置路径, 还是一个相对路径, 那么这个路径还是根据工作目录走的, 不是根据程序所在的目录走的.
 	flag.Parse()
 
 	if isHelp {
 		flag.Usage()
 		fmt.Println()
 		fmt.Println(exampleConfigData())
+		fmt.Println()
 		return
 	}
 
@@ -206,42 +206,5 @@ func tmpPasswordCallback(remoteConn ssh.ConnMetadata, password []byte) (p *ssh.P
 		}
 	}
 
-	return
-}
-
-func loadConfigContent(isStdin bool, base64Data string, filename string, isOffset bool) (content string, isBase64 bool, err error) {
-	content = ""
-	isBase64 = false
-
-	if isStdin {
-		//其实,可以从标准输入中读取整个配置文件的,
-		//因为文件的内容可能有多行,不太好读取,
-		//所以仅支持从标准输入中读取配置文件的base64编码后的内容.
-		if _, err = fmt.Scanln(&content); err != nil {
-			content = ""
-		}
-		isBase64 = true
-		return
-	}
-
-	if 0 < len(base64Data) {
-		content = base64Data
-		isBase64 = true
-		return
-	}
-
-	if 0 < len(filename) {
-		if isOffset && !path.IsAbs(filename) {
-			filename = path.Join(os.Args[0][:strings.LastIndexAny(os.Args[0], `/\`)+1], filename)
-		}
-		var bytes []byte
-		if bytes, err = ioutil.ReadFile(filename); err == nil {
-			content = string(bytes)
-		}
-		isBase64 = false
-		return
-	}
-
-	err = errors.New("unable to load the config content")
 	return
 }
