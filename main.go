@@ -80,6 +80,7 @@ func main() {
 	// certificate details and handles authentication of ServerConns.
 	globalSSHServerConfig = globalConfigData.sshServerConfig()
 	globalSSHServerConfig.PasswordCallback = tmpPasswordCallback
+	globalSSHServerConfig.PublicKeyCallback = tmpPublicKeyCallback
 	globalSSHServerConfig.AddHostKey(hostKey)
 
 	// Once a ServerConfig has been configured, connections can be
@@ -208,5 +209,22 @@ func tmpPasswordCallback(remoteConn ssh.ConnMetadata, password []byte) (p *ssh.P
 		}
 	}
 
+	return
+}
+
+func tmpPublicKeyCallback(remoteConn ssh.ConnMetadata, remoteKey ssh.PublicKey) (p *ssh.Permissions, err error) {
+	//SSH As Authentication For A Web Application
+	//https://lukevers.com/2016/05/01/ssh-as-authentication-for-web-applications
+	//GolangSSHServer/main.go at master · leechristensen/GolangSSHServer
+	//https://github.com/leechristensen/GolangSSHServer/blob/master/main.go
+	//我直觉上认为这样检查有点随意,不是太好,同时又不知道正规的检查方法,于是就先这样用着.
+	err = errors.New("No matching key found")
+	for _, ppk := range globalConfigData.ppk4login {
+		pub := ppk.PublicKey()
+		if pub.Type() == remoteKey.Type() && string(pub.Marshal()) == string(remoteKey.Marshal()) {
+			err = nil
+			break
+		}
+	}
 	return
 }

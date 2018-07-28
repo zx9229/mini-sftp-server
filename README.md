@@ -22,13 +22,11 @@
 * 查看帮助  
 `.\mini-sftp-server.exe -help`
 
-* 创建示例配置文件  
-首先，`.\mini-sftp-server.exe -help > cfgJson 2>&1`  
-然后，`move cfgJson cfg.json`  
-这样得到的`cfg.json`没有BOM头，可以被程序正常加载。
-
 * 使用示例  
-`.\mini-sftp-server.exe -conf cfg.json`
+首先，`.\mini-sftp-server.exe -help > cfg.json`  
+然后，修改`cfg.json`文件。  
+最后，`.\mini-sftp-server.exe -conf cfg.json`  
+亦或者`.\mini-sftp-server.exe -conf cfg.json -force`
 
 * 配置文件的说明  
 参见[ConfigData.go](https://github.com/zx9229/mini-sftp-server/blob/master/ConfigData.go)顶部的注释。  

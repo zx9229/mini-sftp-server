@@ -8,25 +8,29 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 
 	"golang.org/x/crypto/ssh"
 )
 
 //ConfigData omit
 type ConfigData struct {
-	NoClientAuth  bool              //ssh.ServerConfig
-	MaxAuthTries  int               //ssh.ServerConfig
-	ServerVersion string            //ssh.ServerConfig
-	Address       string            //例如  0.0.0.0:2222
-	IsReadOnly    bool              //ReadOnly configures a Server to serve files in read-only mode.
-	IsDebugMode   bool              //显示调试信息
-	UserPwd       map[string]string //用户名和密码
-	UserPwdMD5    map[string]string //用户名和密码的MD5值
-	UseOneTimeKey bool              //使用一次性的私钥(临时密钥,在进程中临时生成,进程退出之后就丢失了)
-	HostKeyFile   string            //使用指定的私钥的文件
-	HostKey       string            //指定私钥的内容
-	HomeDir       string            //默认目录(不填则为进程的工作目录)
+	NoClientAuth    bool              //ssh.ServerConfig
+	MaxAuthTries    int               //ssh.ServerConfig
+	ServerVersion   string            //ssh.ServerConfig
+	Address         string            //例如  0.0.0.0:2222
+	IsReadOnly      bool              //ReadOnly configures a Server to serve files in read-only mode.
+	IsDebugMode     bool              //显示调试信息
+	UserPwd         map[string]string //用户名和密码
+	UserPwdMD5      map[string]string //用户名和密码的MD5值
+	UseOneTimeKey   bool              //使用一次性的私钥(临时密钥,在进程中临时生成,进程退出之后就丢失了)
+	HostKeyFile     string            //使用指定的私钥的文件
+	HostKey         string            //指定私钥的内容
+	HomeDir         string            //默认目录(不填则为进程的工作目录)
+	PrivateKeyFiles []string          //用户可以使用哪些密钥文件进行登录验证([好像]仅支持OpenSSH格式的私钥文件,不支持putty格式的).
+	ppk4login       []ssh.Signer      //(程序内部使用)
 }
 
 func calcConfigData(s string, isBase64 bool) (cfg *ConfigData, err error) {
@@ -87,6 +91,26 @@ func (thls *ConfigData) init() error {
 			err = errors.New("HostKey is empty")
 			break
 		}
+
+		thls.ppk4login = make([]ssh.Signer, 0)
+		if thls.PrivateKeyFiles != nil {
+			var err2 error
+			var byteSlice []byte
+			for _, filename := range thls.PrivateKeyFiles {
+				if byteSlice, err2 = ioutil.ReadFile(filename); err2 != nil {
+					log.Println("ReadFile", err2)
+					err = fmt.Errorf("problem with the PrivateKeyFile(%v)", filename)
+					break
+				}
+				var currKey ssh.Signer
+				if currKey, err2 = ssh.ParsePrivateKey(byteSlice); err2 != nil {
+					log.Println("ParsePrivateKey", err2)
+					err = fmt.Errorf("problem with the PrivateKeyFile(%v)", filename)
+					break
+				}
+				thls.ppk4login = append(thls.ppk4login, currKey)
+			}
+		}
 	}
 
 	return err
@@ -109,6 +133,7 @@ func exampleConfigData() string {
 	cfgData.UserPwd["ping"] = "pong"
 	cfgData.UserPwd["Scott"] = "Tiger"
 	cfgData.UserPwdMD5["u"] = "83878c91171338902e0fe0fb97a8c47a" //[p]的md5值的小写.
+	cfgData.PrivateKeyFiles = make([]string, 0)
 	data, err := json.Marshal(cfgData)
 	if err != nil {
 		panic("UNKNOWN_ERROR")
