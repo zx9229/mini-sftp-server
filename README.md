@@ -39,3 +39,9 @@
 
 * `Linux`下可以利用`OpenSSH`建立`SFTP`服务器。  
 略。  
+
+
+# 备注说明  
+
+`Windows`下可以使用`WinSCP`连接该服务程序。  
+`Linux`下可以使用`sshpass`为`sftp`填入密码：`sshpass -p 密码 sftp -P 端口 用户名@主机:远程文件名 本地文件名`。  
