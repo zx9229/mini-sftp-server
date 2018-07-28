@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-func loadConfigContent(isStdin bool, base64Data string, filename string, isOffset bool) (content string, isBase64 bool, err error) {
+func loadConfigContent(isStdin bool, base64Data string, filename string, isForce bool, isOffset bool) (content string, isBase64 bool, err error) {
 	content = ""
 	isBase64 = false
 
@@ -34,9 +35,12 @@ func loadConfigContent(isStdin bool, base64Data string, filename string, isOffse
 		if isOffset && !path.IsAbs(filename) {
 			filename = path.Join(os.Args[0][:strings.LastIndexAny(os.Args[0], `/\`)+1], filename)
 		}
-		var bytes []byte
-		if bytes, err = ioutil.ReadFile(filename); err == nil {
-			content = string(bytes)
+		var byteSlice []byte
+		if byteSlice, err = ioutil.ReadFile(filename); err == nil {
+			if isForce {
+				byteSlice = forceConvertJSONTypeContent(byteSlice)
+			}
+			content = string(byteSlice)
 		}
 		isBase64 = false
 		return
@@ -44,4 +48,25 @@ func loadConfigContent(isStdin bool, base64Data string, filename string, isOffse
 
 	err = errors.New("unable to load the config content")
 	return
+}
+
+func forceConvertJSONTypeContent(srcByteSlice []byte) []byte {
+	var dstByteSlice []byte
+	if true { //移除第一个"{"前面的所有数据(主要是为了移除BOM头).
+		idx := bytes.IndexAny(srcByteSlice, "{")
+		if idx < 0 {
+			idx = 0
+		}
+		dstByteSlice = srcByteSlice[idx:]
+	}
+	if true { //移除最后一个"}"后面的所有数据.
+		idx := bytes.LastIndexAny(dstByteSlice, "}")
+		if 0 < idx {
+			dstByteSlice = dstByteSlice[:idx+1]
+		}
+	}
+	if true { //强制(简单粗暴的)改变Unicode编码的文件内容(Win10可能会默认生成Unicode编码的文件).
+		dstByteSlice = bytes.Replace(dstByteSlice, []byte{0x0}, []byte{}, -1)
+	}
+	return dstByteSlice
 }

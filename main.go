@@ -33,13 +33,15 @@ func main() {
 		isStdin    bool
 		base64Data string
 		confName   string
+		isForce    bool
 		isOffset   bool
 	)
 
-	flag.BoolVar(&isHelp, "help", false, "show this help")
-	flag.BoolVar(&isStdin, "stdin", false, "read base64 encoded data from standard input")
-	flag.StringVar(&base64Data, "base64", "", "base64 encoded data for the configuration file")
-	flag.StringVar(&confName, "conf", "", "configuration file name")
+	flag.BoolVar(&isHelp, "help", false, "show this help.")
+	flag.BoolVar(&isStdin, "stdin", false, "read base64 encoded data from standard input.")
+	flag.StringVar(&base64Data, "base64", "", "base64 encoded data for the configuration file.")
+	flag.StringVar(&confName, "conf", "", "configuration file name.")
+	flag.BoolVar(&isForce, "force", false, "force parsing json-type conf files in a simple and rude manner.")
 	flag.BoolVar(&isOffset, "offset", false, "find the conf based on the dir where the exe is located.")
 	//如果配置文件里面有配置路径, 还是一个相对路径, 那么这个路径还是根据工作目录走的, 不是根据程序所在的目录走的.
 	flag.Parse()
@@ -52,7 +54,7 @@ func main() {
 		return
 	}
 
-	content, isBase64, err := loadConfigContent(isStdin, base64Data, confName, isOffset)
+	content, isBase64, err := loadConfigContent(isStdin, base64Data, confName, isForce, isOffset)
 	if err != nil {
 		log.Fatalln("loadConfigContent,", err)
 	}
