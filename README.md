@@ -36,6 +36,8 @@
 
 * 我想(在Windows/Linux下)格式化`JSON`格式的配置文件  
 [stedolan/jq: Command-line JSON processor](https://github.com/stedolan/jq)。  
+下载：`wget https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux32`。  
+使用：`./jq-linux32 . cfg.json > cfg.json`。  
 
 * `Windows`下可以使用`freeSSHd`充当`SFTP`服务器。  
 [freeSSHd and freeFTPd - open source SSH and SFTP servers for Windows](http://www.freesshd.com/)。  
