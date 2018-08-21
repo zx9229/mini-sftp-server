@@ -1,0 +1,21 @@
+{
+    "NoClientAuth": false,
+    "MaxAuthTries": 0,
+    "ServerVersion": "",
+    "Address": "0.0.0.0:22333",
+    "IsReadOnly": false,
+    "IsDebugMode": false,
+    "UserPwd": {
+        "Scott": "Tiger",
+        "ping": "pong",
+        "root": "toor"
+    },
+    "UserPwdMD5": {
+        "u": "83878c91171338902e0fe0fb97a8c47a"
+    },
+    "UseOneTimeKey": false,
+    "HostKeyFile": "./temp_host_key_file_rsa",
+    "HostKey": "",
+    "HomeDir": "",
+    "PrivateKeyFiles": []
+}
