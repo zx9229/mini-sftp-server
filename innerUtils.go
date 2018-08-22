@@ -10,9 +10,10 @@ import (
 	"strings"
 )
 
-func loadConfigContent(isStdin bool, base64Data string, filename string, isForce bool, isOffset bool) (content string, isBase64 bool, err error) {
+func loadConfigContent(isStdin bool, base64Data string, filename string, isForce bool, isOffset bool) (content string, isBase64 bool, baseDir string, err error) {
 	content = ""
 	isBase64 = false
+	baseDir = ""
 
 	if isStdin {
 		//其实,可以从标准输入中读取整个配置文件的,
@@ -33,7 +34,8 @@ func loadConfigContent(isStdin bool, base64Data string, filename string, isForce
 
 	if 0 < len(filename) {
 		if isOffset && !path.IsAbs(filename) {
-			filename = path.Join(os.Args[0][:strings.LastIndexAny(os.Args[0], `/\`)+1], filename)
+			baseDir = os.Args[0][:strings.LastIndexAny(os.Args[0], `/\`)+1]
+			filename = path.Join(baseDir, filename)
 		}
 		var byteSlice []byte
 		if byteSlice, err = ioutil.ReadFile(filename); err == nil {

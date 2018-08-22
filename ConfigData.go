@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -31,9 +32,10 @@ type ConfigData struct {
 	HomeDir         string            //默认目录(不填则为进程的工作目录)
 	PrivateKeyFiles []string          //用户可以使用哪些密钥文件进行登录验证([好像]仅支持OpenSSH格式的私钥文件,不支持putty格式的).
 	ppk4login       []ssh.Signer      //(程序内部使用)
+	basedir         string            //(程序内部使用)配置文件中配置了路径时,如果路径是相对路径,路径的基准目录
 }
 
-func calcConfigData(s string, isBase64 bool) (cfg *ConfigData, err error) {
+func calcConfigData(s string, isBase64 bool, baseDir string) (cfg *ConfigData, err error) {
 	for range "1" {
 		var data []byte
 		if isBase64 {
@@ -48,8 +50,16 @@ func calcConfigData(s string, isBase64 bool) (cfg *ConfigData, err error) {
 			cfg = nil
 			break
 		}
+		cfg.basedir = baseDir
 	}
 	return
+}
+
+func try_join_path(baseDir string, thePath string) string {
+	if 0 < len(baseDir) && !path.IsAbs(thePath) {
+		thePath = path.Join(baseDir, thePath)
+	}
+	return thePath
 }
 
 func (thls *ConfigData) init() error {
@@ -79,7 +89,8 @@ func (thls *ConfigData) init() error {
 		} else if 0 < len(thls.HostKeyFile) {
 			//你可以[ssh-keygen -t rsa -f ./my_rsa]
 			//然后令[HostKeyFile]的值为[./my_rsa]
-			if bytes, err2 := ioutil.ReadFile(thls.HostKeyFile); err2 != nil {
+			curHostKeyFile := try_join_path(thls.basedir, thls.HostKeyFile)
+			if bytes, err2 := ioutil.ReadFile(curHostKeyFile); err2 != nil {
 				err = err2
 				break
 			} else {
@@ -97,6 +108,7 @@ func (thls *ConfigData) init() error {
 			var err2 error
 			var byteSlice []byte
 			for _, filename := range thls.PrivateKeyFiles {
+				filename = try_join_path(thls.basedir, filename)
 				if byteSlice, err2 = ioutil.ReadFile(filename); err2 != nil {
 					log.Println("ReadFile", err2)
 					err = fmt.Errorf("problem with the PrivateKeyFile(%v)", filename)

@@ -54,12 +54,12 @@ func main() {
 		return
 	}
 
-	content, isBase64, err := loadConfigContent(isStdin, base64Data, confName, isForce, isOffset)
+	content, isBase64, baseDir, err := loadConfigContent(isStdin, base64Data, confName, isForce, isOffset)
 	if err != nil {
 		log.Fatalln("loadConfigContent,", err)
 	}
 
-	if globalConfigData, err = calcConfigData(content, isBase64); err != nil {
+	if globalConfigData, err = calcConfigData(content, isBase64, baseDir); err != nil {
 		log.Fatalln("calcConfigData,", err)
 	}
 
