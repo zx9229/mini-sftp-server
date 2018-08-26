@@ -2,7 +2,7 @@
     "NoClientAuth": false,
     "MaxAuthTries": 0,
     "ServerVersion": "",
-    "Address": "0.0.0.0:22333",
+    "Address": "localhost:22333",
     "IsReadOnly": false,
     "IsDebugMode": false,
     "UserPwd": {
